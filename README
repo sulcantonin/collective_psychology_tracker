@@ -1,0 +1,15 @@
+Install following packages, the easiest way is to simply run pip install $library
+
+- numpy
+- scipy
+- matplotlib
+- setuptools (required by tensorflow)
+- wheel  (required by tensorflow)
+- tensorflow
+- opencv-python
+- opencv-contrib-python
+- PeakUtils
+
+Unfortunately, installation of all these libraries is aboslute necessary to properly run the tool.
+
+
