@@ -6,6 +6,8 @@ import numpy as np
 import scipy.signal as signal
 import peakutils
 import csv
+from skimage import morphology
+from skimage.measure import label, regionprops
 
 
 # this function helps
@@ -17,20 +19,87 @@ def resize_list_of_images(list_of_images, w, h):
     return X
 
 
-def roi_selection(fname_in, fname_out):
-    # opening reader for the video
-    v_in = cv2.VideoCapture(fname_in)
+def sigma_test(X, sigma_mult):
+    return np.abs((X[:] - np.mean(X[:]))) > sigma_mult * np.std(X[:])
 
+
+# automatically select the bounding box by calculating cumulative
+# difference between all frames
+def roi_detection(filename_in,
+                  morph_disk_radius,
+                  automatic_roi_selection_sigma_mult):
+    v_in = cv2.VideoCapture(filename_in)
     # reading first frame
     ret, frame = v_in.read()
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
-    # user selection of the first frame
-    bbox = cv2.selectROI("roi", frame)
+    frame_diff = np.zeros(frame.shape[0:2], np.float32)
+    print('automatic roi selection, this may take a while ...')
+    while True:
+        ret, frame_new = v_in.read()
+        if ret == 0:
+            break
+        frame_new = cv2.cvtColor(frame_new, cv2.COLOR_RGB2GRAY)
+        frame_diff = frame_diff + (frame_new - frame) ** 2
+        frame = frame_new
+        print('.', end='')
+    s = morphology.disk(morph_disk_radius)
+    roi_sigma_mask = sigma_test(frame_diff, automatic_roi_selection_sigma_mult)
+    roi_sigma_mask = morphology.erosion(roi_sigma_mask, s)
+    roi_sigma_mask = morphology.dilation(roi_sigma_mask, s)
+    np.save('/home/as/r', roi_sigma_mask)
+    label_img = label(roi_sigma_mask)
+    regions = regionprops(label_img)
+    if len(regions) > 0:
+        bbox = regions[np.argmax([r.area for r in regions])].bbox
+        # transforming from regionprops  (min_row, min_col, max_row, max_col) to (x,y,w,h)
+        return [bbox[1], bbox[0], bbox[3] - bbox[1], bbox[2] - bbox[0]]
+    else:
+        return None
+
+
+def roi_selection(fname_in):
+    v_in = cv2.VideoCapture(fname_in)
+    # reading first frame
+    ret, frame_mean = v_in.read()
+    frame_mean = cv2.cvtColor(frame_mean, cv2.COLOR_RGB2GRAY)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    while True:
+        ret, frame = v_in.read()
+        if ret == 0:
+            break
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        frame = frame.astype(np.float32)
+        frame /= np.max(frame[:])
+        frame_mean = frame_mean + frame
+    frame_mean = frame_mean / n_frames
+    frame_mean_normalized = frame_mean / np.max(frame_mean[:])
+    bbox = cv2.selectROI("roi", np.max(frame_mean_normalized[:]) - frame_mean_normalized)
+
+    return bbox
+
+
+def roi(filename_in, filename_out,
+        automatic_roi_selection,
+        automatic_roi_selection_sigma_mult=3,
+        morph_disk_radius=5):
+    # automatic selection of bounding box
+    if automatic_roi_selection > 0:
+        bbox = roi_detection(filename_in, morph_disk_radius, automatic_roi_selection_sigma_mult)
+    else:
+        bbox = roi_selection(filename_in)
+
+    # opening reader for the video
+    v_in = cv2.VideoCapture(filename_in)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    # reading first frame
+    ret, frame = v_in.read()
 
     # number of frames of the input video
     fps = v_in.get(cv2.CAP_PROP_FPS)
     # the output video
-    v_out = cv2.VideoWriter(fname_out, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (bbox[2], bbox[3]))
+    v_out = cv2.VideoWriter(filename_out, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (bbox[2], bbox[3]))
 
     p1 = (int(bbox[0]), int(bbox[1]))
     p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
@@ -46,35 +115,55 @@ def roi_selection(fname_in, fname_out):
     return True
 
 
+def render_rois(img, rois):
+    for t, bbox in enumerate(rois):
+        if bbox is not None:
+            p1 = (int(bbox[0]), int(bbox[1]))
+            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+            # visualisation
+            cv2.rectangle(img, p1, p2, (255, 0, 0))
+            cv2.putText(img, str(t), p1, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
+    return img
+
+
 # this function returns list of detected frames for the window selected in the first selected frame
-def tracking_selection(fname_in, fname_out_video, fname_out_csv):
+def tracking_selection(filename_in, filename_out_video, filename_out_csv, n_frames_buffer):
     # opening reader for the video
-    v_in = cv2.VideoCapture(fname_in)
+    v_in = cv2.VideoCapture(filename_in)
     fps = v_in.get(cv2.CAP_PROP_FPS)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    n_frames_buffer = int(n_frames_buffer)
+    # making sure that the frame buffer is not longer than actual number of frames
+    n_frames_buffer = np.minimum(n_frames, n_frames_buffer)
 
     # initializing tracker
-    tracker = cv2.TrackerMIL_create()
+    trackers = [cv2.TrackerMIL_create() for _ in range(10)]
+    tracks = [[None] * n_frames for _ in range(10)]
 
-    frames = []
-    tracks = []
+    frames = [None] * n_frames_buffer
 
-    # buffering frames in memory
+    # buffering n_frames_buffer frames in memory
+    for f in range(n_frames_buffer):
+        _, frames[f] = v_in.read()
+
+    current_tracker = 0
     while True:
-        ret, frame = v_in.read()
-        if not ret:
+        rois = [t[0] for t in tracks]
+        img = render_rois(frames[0].copy(), rois)
+        # select the region of interest for tracker
+        tracks[0][current_tracker] = cv2.selectROI('tracking', img)
+
+        key = cv2.waitKey()
+        # switching tracker
+        if ord('9') >= key >= ord('0'):
+            current_tracker = int(chr(key))
+        # quit
+        if key == ord('q'):
             break
-        frames += [frame, ]
-        tracks += [None, ]
-    n_frames = len(frames)
-    frame = 0
 
-    img = frames[frame].copy()
-
-    # select the region of interest for tracker
-    tracks[0] = cv2.selectROI('frame', img)
-    # initialize the tracker
-    tracker.init(img, tracks[0])
-
+    # [t.init(frames[0],tracks[])]
+    # tracker.init(img, tracks[0])
+    print(rois)
     w = tracks[0][2]
     h = tracks[0][3]
 
@@ -116,8 +205,8 @@ def tracking_selection(fname_in, fname_out_video, fname_out_csv):
     w = int(w / frame)
     h = int(h / frame)
 
-    v_out = cv2.VideoWriter(fname_out_video, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (w, h))
-    csv_out = open(fname_out_csv, 'w')
+    v_out = cv2.VideoWriter(filename_out_video, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (w, h))
+    csv_out = open(filename_out_csv, 'w')
     for frame in range(len(frames)):
         bbox = tracks[frame]
         if bbox is None:
@@ -157,9 +246,6 @@ def video2volume_selection(fname_in, fname_out):
     np.save(fname_out, V)
     v_in.release()
     return True
-
-
-
 
 
 def low_pass_filter(x, N=2, Wn=0.01):
@@ -203,7 +289,6 @@ def tsne(x):
     for i in range(0, n_c):
         ind = np.where(c == i)[0]
         plt.plot(ind, np.ones(ind.shape) * i)
-
 
 
 '''
