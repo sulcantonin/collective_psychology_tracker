@@ -98,6 +98,7 @@ def training_epoch(ae, optimizer, session, X, l):
     session.run(optimizer, feed_dict={ae['x']: X, ae['l']: [l]})
     return session.run((ae['y'], ae['z'], ae['cost']), feed_dict={ae['x']: X, ae['l']: [l]})
 
+
 def fft_low_pass_filter(x, band=60):
     xf = np.fft.rfft(x)
     xf[band:] = 0

@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 from tkinter import filedialog
 
 
-class autoencoder_gui:
+class autoencoderGUI:
 
     def __init__(self, window):
         self.window = window
