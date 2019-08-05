@@ -33,12 +33,12 @@ def userLeftOutputEmpty(fname_in, fname_suffix, file_type=None):
 
 
 def roiSelectionCallback():
-    filenameIn = filedialog.askopenfilename()
+    filenameIn = tk.filedialog.askopenfilename()
     # nothing chosen
     if len(filenameIn) == 0:
         return
 
-    filenameOut = filedialog.asksaveasfilename(title='output video file')
+    filenameOut = tk.filedialog.asksaveasfilename(title='output video file')
 
     if filenameOut is "":
         filenameOut = userLeftOutputEmpty(filenameIn, 'roi')
@@ -47,13 +47,13 @@ def roiSelectionCallback():
 
 
 def tracking_selection_callback():
-    fname_in = filedialog.askopenfilename()
+    fname_in = tk.filedialog.askopenfilename()
     # nothing chosen
     if len(fname_in) == 0:
         return
 
-    filenameOutVideo = filedialog.asksaveasfilename(title='output video file')
-    filenameOutCsv = filedialog.asksaveasfilename(title='output csv file')
+    filenameOutVideo = tk.filedialog.asksaveasfilename(title='output video file')
+    filenameOutCsv = tk.filedialog.asksaveasfilename(title='output csv file')
 
     if filenameOutVideo is "":
         filenameOutVideo = userLeftOutputEmpty(fname_in, 'tracking')
@@ -63,8 +63,8 @@ def tracking_selection_callback():
 
 
 def video2volumeSelectionCallback():
-    filenameIn = filedialog.askopenfilename()
-    filenameOut = filedialog.asksaveasfilename()
+    filenameIn = tk.filedialog.askopenfilename()
+    filenameOut = tk.filedialog.asksaveasfilename()
 
     if filenameOut is "":
         filenameOut = userLeftOutputEmpty(filenameIn, '', 'npy')

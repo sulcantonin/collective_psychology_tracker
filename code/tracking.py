@@ -1,17 +1,12 @@
-import numpy as np
-from tkinter import filedialog
+import time
+
 import cv2
-import tensorflow as tf
 import numpy as np
-import scipy.signal as signal
-import peakutils
-import csv
 from skimage import morphology
 from skimage.measure import label, regionprops
-from collections import deque
 
 # this function helps
-from roi import MOTTrackingROI
+from roigui import MOTTrackingROI
 
 
 def resizeListOfImages(list_of_images, w, h):
@@ -150,11 +145,14 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv):
     tracks = [[None] * nTrackers for _ in range(nFrames)]
     trackers = [None] * nTrackers
 
+    tracks[0] = initialROIs
     trackers = initTrackers(trackers, frame, initialROIs)
 
     frameId = 1  # first one was used for initializaiton
+    timeout = 0
     while True:
         vIn.set(cv2.CAP_PROP_POS_FRAMES, frameId)
+        t = time.time()
         ret, frame = vIn.read()
         # end of the video or fail
         if ret == 0:
@@ -170,7 +168,7 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv):
 
         cv2.imshow("tracking", MOTTrackingROI.drawROIs(frame, tracks[frameId]))
 
-        key = cv2.waitKey()
+        key = cv2.waitKey(timeout)
         # go backwards
         if key == ord('a'):
             frameId = np.maximum(0, frameId - 1)
@@ -182,6 +180,17 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv):
         if key == ord('s'):
             MOTGUI = MOTTrackingROI(frame, tracks[frameId])
             initTrackers(trackers, frame, MOTGUI.getROIs())
+        # play
+        if key == ord('p'):
+            if timeout == 0:
+                timeout = 1
+            else:
+                timeout = 0
+
+        # if the autoplay is active, add the frames automatically
+        if timeout != 0:
+            frameId = frameId + 1
+
         if key == ord('q'):
             break
 
@@ -224,13 +233,13 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv):
         w = np.nanmean(w).astype(np.uint16)
 
         V = resizeListOfImages(volumes[t], w, h)
-        # remove empty frames
-        frameSum = V.reshape((-1,V.shape[-1])).sum(0)
-        V = V[...,frameSum > 0 and np.isfinite(frameSum)]
+        if V.ravel().sum() > 0:
+            frameSum = V.reshape((-1,V.shape[-1])).sum(0)
+            V = V[...,np.logical_and(frameSum > 0, np.isfinite(frameSum))]
 
-        filenameOutputVolume = filenameOutVideo.split('.')[:-1][0] + '_' + str(t)
-        np.save(filenameOutputVolume ,V)
-        print('saved ' + filenameOutputVolume)
+            filenameOutputVolume = filenameOutVideo.split('.')[:-1][0] + '_' + str(t)
+            np.save(filenameOutputVolume ,V)
+            print('saved ' + filenameOutputVolume)
 
 
 def video2volumeSelection(fname_in, fname_out):
@@ -286,122 +295,3 @@ def tsne(x):
     for i in range(0, n_c):
         ind = np.where(c == i)[0]
         plt.plot(ind, np.ones(ind.shape) * i)
-
-
-'''
-# saver = tf.train.Saver()
-# sess = tf.Session()
-# saver.save(sess, "./data/model.ckpt")
-z = sess.run(ae['z'], feed_dict={ae['x']: X.reshape((n_frames, -1))})
-y = sess.run(ae['y'], feed_dict={ae['x']: X.reshape((n_frames, -1))})
-np.save(fname[:-4] + '_z', z)
-np.save(fname[:-4] + '_y', y)
-
-# visualisation part
-# latent space
-z = np.load(fname[:-4] + '_z.npy')
-# input
-vin = cv2.VideoCapture(fname)
-# number of frames, the last column
-n_frames = z.shape[0]
-# calculating mean of absolute value of the latent code
-z_mean = np.mean(np.abs(z.reshape(n_frames, -1)), 1)
-'''
-
-## this part is for heartbeat sensing
-'''
-z_mean_lp = low_pass_filter(z_mean, 2, 0.05)
-z_mean_hp = np.abs(z_mean - z_mean_lp)
-d_z_mean_hp = z_mean_hp[:-1] - z_mean_hp[1:]
-
-plt.subplot(3, 1, 1)
-plt.plot(z_mean)
-plt.title('sum(|z|)')
-
-plt.subplot(3, 1, 2)
-plt.plot(z_mean_hp)
-plt.title('high freq z_mean')
-
-plt.subplot(3, 1, 3)
-plt.plot(d_z_mean_hp)
-plt.title('derivative of high freq.z_mean')
-plt.savefig(fname[:-4] + '_graphs.png')
-
-plt.show()
-
-beat = d_z_mean_hp > 0.0 
-
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-vout = None
-
-for b in range(len(beat)):
-    ret, frame = vin.read()
-
-    if vout is None:
-        vout = cv2.VideoWriter(fname[:-4] + '_res.avi', fourcc, 20.0, (frame.shape[1], frame.shape[0]))
-
-    if beat[b]:
-
-        frame[0:20, 0:20, 2] = 255
-        frame[0:20, 0:20, 0:2] = 0
-    vout.write(frame)
-
-vout.release()
-np.save(fname[:-4] + '_beat', beat)
-np.save(fname[:-4] + '_z_mean_hp', z_mean_hp)
-np.save(fname[:-4] + 'd_z_mean_hp', d_z_mean_hp)
-'''
-
-'''
-# breath detection
-z = np.load(fname[:-4] + '_z.npy')
-vin = cv2.VideoCapture(fname)
-z_mean = np.mean(np.abs(z.reshape(z.shape[0], -1)), 1)
-
-np.save(fname[:-4] + '_z_mean', z_mean)
-
-z_mean_filtered = just_another_filter(z_mean, band)
-np.save(fname[:-4] + '_z_mean_filtered', z_mean_filtered)
-
-breath_indices = peakutils.indexes(z_mean_filtered, 0)
-breath = np.zeros_like(z_mean)
-breath[breath_indices] = 1
-
-plt.subplot(2, 1, 1)
-plt.plot(z_mean)
-plt.title('sum(|z|)')
-
-plt.subplot(2, 1, 2)
-plt.plot(z_mean_filtered)
-plt.plot(breath_indices, z_mean_filtered[breath_indices], 'ro')
-plt.title('filtered sum(|z|)')
-
-plt.savefig(fname[:-4] + '_graphs.png')
-plt.show()
-
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-vout = None
-
-for b in range(len(breath)):
-    ret, frame = vin.read()
-
-    if vout is None:
-        vout = cv2.VideoWriter(fname[:-4] + '_res.avi', fourcc, vin.get(cv2.CAP_PROP_FPS),
-                               (frame.shape[1], frame.shape[0]))
-
-    if breath[b]:
-        frame[bbox[1] - 20:bbox[1], bbox[0] - 20:bbox[0], 2] = 255
-        frame[bbox[1] - 20:bbox[1], bbox[0] - 20:bbox[0], 0:2] = 0
-    vout.write(frame)
-
-vout.release()
-
-print(fname.split('/')[-3])
-print(fname.split('/')[-1])
-print("beats:" + str(len(breath_indices)))
-print("nframes:" + str(vin.get(cv2.CAP_PROP_FRAME_COUNT)))
-print("fps:" + str(vin.get(cv2.CAP_PROP_FPS)))
-
-np.save(fname[:-4] + '_breath_indices.npy', breath_indices)
-
-'''
