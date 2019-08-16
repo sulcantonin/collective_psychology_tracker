@@ -1,16 +1,6 @@
 import tensorflow as tf
 import numpy as np
 
-
-# normalization of the input images, it would be better if this remain mystery
-def normalize(X):
-    X = X.astype(np.float32) / 255
-    for i in range(X.shape[-1]):
-        X[..., i] = X[..., i] - np.mean(X[..., i].ravel())
-        X[..., i] = X[..., i] / np.sqrt(np.sum(X[..., i].ravel() ** 2))
-    return X
-
-
 # the default parameters means that thetre are 3 layers, each with 10 feature maps, convolution size 3x3,
 # the same settings for the decoder
 def autoencoder(x_dim,  # width
@@ -22,12 +12,12 @@ def autoencoder(x_dim,  # width
     init = tf.contrib.layers.xavier_initializer()
     # defining the input x for the tensorflow
     x = tf.placeholder(tf.float32, [None, x_dim * y_dim * n_filters[0]], name='x')
-    x_tensor = tf.reshape(x, [-1, x_dim, y_dim, n_filters[0]])
+    xTensor = tf.reshape(x, [-1, x_dim, y_dim, n_filters[0]])
     # defining the reguralizer for the latent space
     # this value of value of lambda_L1 the less peaks you get
-    lambda_L1 = tf.placeholder(tf.float32, 1, name='lambda')
+    lambdaL1 = tf.placeholder(tf.float32, 1, name='lambda')
 
-    current_input = x_tensor
+    currentInput = xTensor
 
     # Build the encoder
     encoder = []
@@ -35,11 +25,11 @@ def autoencoder(x_dim,  # width
     # stacking the encoders
     for l, no in enumerate(n_filters[1:]):
         # number of inputs from previous layer
-        ni = current_input.get_shape().as_list()[-1]
+        ni = currentInput.get_shape().as_list()[-1]
         # defining size of the kernel
         W_shape = [filter_sizes[l], filter_sizes[l], ni, no]
         # storing the size if the input (for decoder they should match)
-        shapes.append(current_input.get_shape().as_list())
+        shapes.append(currentInput.get_shape().as_list())
         # creating variable for convolution kernel and bias
         # it need to be defined as variable because they can be optimized during the traning
         W = tf.Variable(init(W_shape))
@@ -47,13 +37,13 @@ def autoencoder(x_dim,  # width
         # storing the encoder
         encoder.append(W)
         # leaky_relu ( convolution ( input ) )
-        output = tf.nn.leaky_relu(tf.nn.conv2d(current_input, W, strides=[1, 2, 2, 1], padding='SAME') + b)
+        output = tf.nn.leaky_relu(tf.nn.conv2d(currentInput, W, strides=[1, 2, 2, 1], padding='SAME') + b)
         # current output is input for next layer
-        current_input = output
+        currentInput = output
 
     # %%
     # store the latent representation
-    z = current_input
+    z = currentInput
     # going reversely from the latent space and upsampling to the input size
     encoder.reverse()
     shapes.reverse()
@@ -65,27 +55,27 @@ def autoencoder(x_dim,  # width
         W = tf.Variable(init(W_shape))
         b = tf.Variable(init([W_shape[-2]]))
         # leaky_relu ( transpose_convolution ( input ))
-        output = tf.nn.leaky_relu(tf.nn.conv2d_transpose(current_input, W,
+        output = tf.nn.leaky_relu(tf.nn.conv2d_transpose(currentInput, W,
                                                          tf.stack([tf.shape(x)[0], shape[1], shape[2], shape[3]]),
                                                          strides=[1, 2, 2, 1], padding='SAME') + b)
-        current_input = output
+        currentInput = output
 
     # %%
     # The output of the last layer has the same size as input
-    y = current_input
+    y = currentInput
     # cost function measures pixel-wise difference of the x and reconstructed output of the network +
     # regularizer which encourages usage minimum number
-    cost = tf.reduce_sum(tf.square(y - x_tensor)) + lambda_L1 * tf.reduce_sum(tf.abs(z))
+    cost = tf.reduce_sum(tf.square(y - xTensor)) + lambdaL1 * tf.reduce_sum(tf.abs(z))
 
     # %%
     return {'x': x,
             'z': z,
             'y': y,
-            'l': lambda_L1,
+            'l': lambdaL1,
             'cost': cost}
 
 
-def init_training(ae, learning_rate):
+def initTraining(ae, learning_rate):
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(ae['cost'])
 
     session = tf.Session()
@@ -94,12 +84,12 @@ def init_training(ae, learning_rate):
 
 
 # Traning procedure
-def training_epoch(ae, optimizer, session, X, l):
+def trainingEpoch(ae, optimizer, session, X, l):
     session.run(optimizer, feed_dict={ae['x']: X, ae['l']: [l]})
     return session.run((ae['y'], ae['z'], ae['cost']), feed_dict={ae['x']: X, ae['l']: [l]})
 
 
-def fft_low_pass_filter(x, band=60):
+def fftLowPassFilter(x, band=60):
     xf = np.fft.rfft(x)
     xf[band:] = 0
     return np.fft.irfft(xf)

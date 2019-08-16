@@ -18,18 +18,22 @@ automatic_roi_selection = config.getboolean('default',
 automatic_roi_selection_sigma_mult = config.getfloat('default',
                                                      'automatic_roi_selection_sigma_mult',
                                                      fallback=3)
-morph_disk_radius = config.getint('default',
-                                  'morph_disk_radius',
-                                  fallback=5)
+atomatic_roi_morph_disk_radius = config.getint('default',
+                                               'automatic_roi_morph_disk_radius',
+                                               fallback=5)
+
+trackerName = config.get('default',
+                         'tracker',
+                         fallback='mil')
 
 
-def userLeftOutputEmpty(fname_in, fname_suffix, file_type=None):
-    path = fname_in.split('/')[:-1]
-    fname = fname_in.split('/')[-1].split('.')[0]
-    if file_type is None:
-        file_type = fname_in.split('/')[-1].split('.')[-1]
+def userLeftOutputEmpty(filenameIn, fileSuffix, fileType=None):
+    path = filenameIn.split('/')[:-1]
+    fname = filenameIn.split('/')[-1].split('.')[0]
+    if fileType is None:
+        fileType = filenameIn.split('/')[-1].split('.')[-1]
 
-    return ''.join([p + '/' for p in path]) + fname + '_' + fname_suffix + '.' + file_type
+    return ''.join([p + '/' for p in path]) + fname + '_' + fileSuffix + '.' + fileType
 
 
 def roiSelectionCallback():
@@ -43,23 +47,25 @@ def roiSelectionCallback():
     if filenameOut is "":
         filenameOut = userLeftOutputEmpty(filenameIn, 'roi')
 
-    roi(filenameIn, filenameOut, automatic_roi_selection, automatic_roi_selection_sigma_mult, morph_disk_radius)
+    roi(filenameIn, filenameOut, automatic_roi_selection, \
+        automatic_roi_selection_sigma_mult, \
+        atomatic_roi_morph_disk_radius)
 
 
-def tracking_selection_callback():
-    fname_in = tk.filedialog.askopenfilename()
+def trackingSelectionCallback():
+    filenameIn = tk.filedialog.askopenfilename()
     # nothing chosen
-    if len(fname_in) == 0:
+    if len(filenameIn) == 0:
         return
 
     filenameOutVideo = tk.filedialog.asksaveasfilename(title='output video file')
     filenameOutCsv = tk.filedialog.asksaveasfilename(title='output csv file')
 
     if filenameOutVideo is "":
-        filenameOutVideo = userLeftOutputEmpty(fname_in, 'tracking')
+        filenameOutVideo = userLeftOutputEmpty(filenameIn, 'tracking')
     if filenameOutCsv is "":
-        filenameOutCsv = userLeftOutputEmpty(fname_in, 'tracking', 'csv')
-    trackingSelection(fname_in, filenameOutVideo, filenameOutCsv)
+        filenameOutCsv = userLeftOutputEmpty(filenameIn, 'tracking', 'csv')
+    trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
 
 
 def video2volumeSelectionCallback():
@@ -77,14 +83,14 @@ def autoencoderCallback():
     aeg.autoencoderGUI(autoencoder_window)
 
 
-button_roi_selection = tk.Button(root, text="ROI Selection", command=roiSelectionCallback)
-button_tracking_selection = tk.Button(root, text="Tracking Selection", command=tracking_selection_callback)
-button_video2volume_selection = tk.Button(root, text="Transform video into Volume",
-                                          command=video2volumeSelectionCallback)
-button_autoencoder_selection = tk.Button(root, text="Autoencoder", command=autoencoderCallback)
+buttonROISelection = tk.Button(root, text="ROI Selection", command=roiSelectionCallback)
+buttonTrackingSelection = tk.Button(root, text="Tracking Selection", command=trackingSelectionCallback)
+buttonVideo2volumeSelection = tk.Button(root, text="Transform video into Volume",
+                                        command=video2volumeSelectionCallback)
+buttonAutoencoderSelection = tk.Button(root, text="Autoencoder", command=autoencoderCallback)
 
-button_roi_selection.pack()
-button_tracking_selection.pack()
-button_video2volume_selection.pack()
-button_autoencoder_selection.pack()
+buttonROISelection.pack()
+buttonTrackingSelection.pack()
+buttonVideo2volumeSelection.pack()
+buttonAutoencoderSelection.pack()
 root.mainloop()

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import utils
 
 class MOTTrackingROI:
     # list with bounding boxes with ROIs
@@ -27,18 +27,6 @@ class MOTTrackingROI:
             return None
         else:
             return self.__imageClean.copy()
-    @staticmethod
-    def drawROIs(img,rois):
-        if img is not None and len(rois) > 0:
-            for t, bbox in enumerate(rois):
-                if bbox is not None:
-                    p1 = (int(bbox[0]), int(bbox[1]))
-                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                    # visualisation
-                    cv2.rectangle(img, p1, p2, (255, 0, 0))
-                    cv2.putText(img, str(t), p1, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
-            return img
-        return img
 
     def selectROI(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -65,7 +53,7 @@ class MOTTrackingROI:
         cv2.setMouseCallback(name, self.selectROI)
 
         while True:
-            cv2.imshow(name, MOTTrackingROI.drawROIs(img.copy(), self.getROIs()))
+            cv2.imshow(name, utils.drawROIs(img.copy(), self.getROIs()))
             key = cv2.waitKey(1)
 
             if ord('9') >= key >= ord('0'):
