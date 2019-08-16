@@ -123,7 +123,7 @@ class autoencoderGUI:
             tk.messagebox.showinfo("Warning", "Train Autoencoder")
             return
         filenameOutVideo = tk.filedialog.asksaveasfilename(title='output video file ')
-        filenameOutCSV = tk.filedialog.asksaveasfilename(title='output video file ')
+        filenameOutCSV = tk.filedialog.asksaveasfilename(title='output csv file')
 
         if filenameOutVideo is not "" and \
                 self.V is not None and \

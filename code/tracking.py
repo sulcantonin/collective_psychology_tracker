@@ -29,7 +29,7 @@ def roiDetection(filename_in,
         print('.', end='')
 
     s = morphology.disk(morph_disk_radius)
-    roiSigmaMask = utils.sigma_test(frame_diff, automatic_roi_selection_sigma_mult)
+    roiSigmaMask = utils.sigmaTest(frame_diff, automatic_roi_selection_sigma_mult)
     roiSigmaMask = morphology.erosion(roiSigmaMask, s)
     roiSigmaMask = morphology.dilation(roiSigmaMask, s)
     # np.save('/home/as/r', roiSigmaMask)
@@ -213,49 +213,39 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
         vOut.write(utils.drawROIs(frame, tracks[frameId]))
     vOut.release()
 
+    #
     # saving the volumes
+    #
+
+    # list of frames  where each item is list of tracks to list of tracers where each item is a list of frames
     tracksTransposed = [list(i) for i in zip(*tracks)]
     for t in range(nTrackers):
-        # calculating average width and height
-        h = np.zeros(nFrames)
-        w = np.zeros(nFrames)
+        V = utils.resizeListOfImages(volumes[t])
 
-        # going though all the frames, storing width and height
-        for frameId in range(nFrames):
-            if volumes[t][frameId] is not None:
-                h[frameId] = volumes[t][frameId].shape[0]
-                w[frameId] = volumes[t][frameId].shape[1]
-            else:
-                h[frameId] = np.nan
-                w[frameId] = np.nan
-        # the mean width and height
-        h = np.nanmean(h).astype(np.uint16)
-        w = np.nanmean(w).astype(np.uint16)
-        # resizing the volume to a specific size
-        V = utils.resizeListOfImages(volumes[t], w, h)
-        # saving if there is anything to save
-        if V.ravel().sum() > 0:
+        # saving the volume
+        if V.ravel().sum() > 0:  # testing if the volume is not empty, if sum(V[:]) == 0, then there is nothing to save
             frameSum = V.reshape((-1, V.shape[-1])).sum(0)
+
+            # filtering out the ignored frames
             V = V[..., np.logical_and(frameSum > 0, np.isfinite(frameSum))]
 
             filenameOutputVolume = filenameOutVideo.split('.')[:-1][0] + '_' + str(t)
             np.save(filenameOutputVolume, V)
             print('saved ' + filenameOutputVolume)
             #
+
             filenameOutputBBOXCsv = filenameOutCsv.split('.')[:-1][0] + '_' + str(t) + '.csv'
             tt = tracksTransposed[t]
             # saving only the non empty 4-element bounding boxes
-            FINSH THIS STUFF
-            # tt = tt[ [tt[i] is not None for i in range(len(tt))] ]
-            # np.savetxt(filenameOutputBBOXCsv, np.array(tt), delimiter=",")
-
-            # np.ndarray(tracksTransposed[t]).tofile(filenameOutputCsv, sep=',', format='%i')
+            f = open(filenameOutputBBOXCsv, 'w')
+            f.write(utils.bbox2str(tt))
+            f.close()
             print('saved ' + filenameOutputBBOXCsv)
 
 
-def video2volumeSelection(fnameIn, fnameOut):
+def video2volumeSelection(filenameIn, filenameOut):
     # opening reader for the video
-    v_in = cv2.VideoCapture(fnameIn)
+    v_in = cv2.VideoCapture(filenameIn)
 
     # reading first frame
     ret, frame = v_in.read()
@@ -269,11 +259,12 @@ def video2volumeSelection(fnameIn, fnameOut):
         ret, V[..., frame] = v_in.read()
         print("frame {0} of {1}".format(frame + 1, nf))
 
-    np.save(fnameOut, V)
+    np.save(filenameOut, V)
     v_in.release()
     return True
 
 
+'''
 def tsne(x):
     import numpy as np
     import matplotlib.pyplot as plt
@@ -306,3 +297,4 @@ def tsne(x):
     for i in range(0, n_c):
         ind = np.where(c == i)[0]
         plt.plot(ind, np.ones(ind.shape) * i)
+'''
