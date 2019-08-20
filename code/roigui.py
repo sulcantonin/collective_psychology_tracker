@@ -53,7 +53,7 @@ class MOTTrackingROI:
         cv2.setMouseCallback(name, self.selectROI)
 
         while True:
-            cv2.imshow(name, utils.drawROIs(img.copy(), self.getROIs()))
+            cv2.imshow(name, utils.draw_ROIs(img.copy(), self.getROIs()))
             key = cv2.waitKey(1)
 
             if ord('9') >= key >= ord('0'):

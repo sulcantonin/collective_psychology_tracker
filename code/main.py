@@ -1,6 +1,6 @@
 from tracking import *
 import tkinter as tk
-import autoencodergui as aeg
+import autoencoder_gui as aeg
 import configparser
 
 root = tk.Tk()
@@ -11,21 +11,15 @@ root = tk.Tk()
 config = configparser.ConfigParser()
 config.read('./config.ini')
 
-automatic_roi_selection = config.getboolean('default',
-                                            'automatic_roi_selection',
-                                            fallback=1)
+settings = dict()
 
-automatic_roi_selection_sigma_mult = config.getfloat('default',
-                                                     'automatic_roi_selection_sigma_mult',
-                                                     fallback=3)
-atomatic_roi_morph_disk_radius = config.getint('default',
-                                               'automatic_roi_morph_disk_radius',
-                                               fallback=5)
+settings['automatic_roi_selection'] = config.getboolean('default', 'automatic_roi_selection', fallback=1)
+settings['automatic_roi_selection_sigma_mult'] = config.getfloat('default', 'automatic_roi_selection_sigma_mult',
+                                                                 fallback=3)
+settings['atomatic_roi_morph_disk_radius'] = config.getint('default','automatic_roi_morph_disk_radius',fallback=5)
+settings['tracker'] = config.get('default','tracker', fallback='mil')
 
-trackerName = config.get('default',
-                         'tracker',
-                         fallback='mil')
-
+settings['tracker_video_output'] = config.getboolean('default', 'tracker_video_output', fallback=1)
 
 def userLeftOutputEmpty(filenameIn, fileSuffix, fileType=None):
     path = filenameIn.split('/')[:-1]
@@ -47,9 +41,7 @@ def roiSelectionCallback():
     if filenameOut is "":
         filenameOut = userLeftOutputEmpty(filenameIn, 'roi')
 
-    roi(filenameIn, filenameOut, automatic_roi_selection, \
-        automatic_roi_selection_sigma_mult, \
-        atomatic_roi_morph_disk_radius)
+    roi(filenameIn, filenameOut, settings)
 
 
 def trackingSelectionCallback():
@@ -65,7 +57,7 @@ def trackingSelectionCallback():
         filenameOutVideo = userLeftOutputEmpty(filenameIn, 'tracking')
     if filenameOutCsv is "":
         filenameOutCsv = userLeftOutputEmpty(filenameIn, 'tracking', 'csv')
-    trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
+    tracking_selection(filenameIn, filenameOutVideo, filenameOutCsv, settings)
 
 
 def video2volumeSelectionCallback():
@@ -75,12 +67,12 @@ def video2volumeSelectionCallback():
     if filenameOut is "":
         filenameOut = userLeftOutputEmpty(filenameIn, '', 'npy')
 
-    video2volumeSelection(filenameIn, filenameOut)
+    video_to_volume(filenameIn, filenameOut)
 
 
 def autoencoderCallback():
     autoencoder_window = tk.Toplevel(root)
-    aeg.autoencoderGUI(autoencoder_window)
+    aeg.autoencoder_gui(autoencoder_window)
 
 
 buttonROISelection = tk.Button(root, text="ROI Selection", command=roiSelectionCallback)

@@ -9,18 +9,16 @@ from roigui import MOTTrackingROI
 
 # automatically select the bounding box by calculating cumulative
 # difference between all frames
-def roiDetection(filename_in,
-                 morph_disk_radius,
-                 automatic_roi_selection_sigma_mult):
-    vIn = cv2.VideoCapture(filename_in)
+def roi_detection(filename_in, settings):
+    v_in = cv2.VideoCapture(filename_in)
     # reading first frame
-    ret, frame = vIn.read()
+    ret, frame = v_in.read()
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
     frame_diff = np.zeros(frame.shape[0:2], np.float32)
     print('automatic roi selection, this may take a while ...')
     while True:
-        ret, frame_new = vIn.read()
+        ret, frame_new = v_in.read()
         if ret == 0:
             break
         frame_new = cv2.cvtColor(frame_new, cv2.COLOR_RGB2GRAY)
@@ -28,12 +26,12 @@ def roiDetection(filename_in,
         frame = frame_new
         print('.', end='')
 
-    s = morphology.disk(morph_disk_radius)
-    roiSigmaMask = utils.sigmaTest(frame_diff, automatic_roi_selection_sigma_mult)
-    roiSigmaMask = morphology.erosion(roiSigmaMask, s)
-    roiSigmaMask = morphology.dilation(roiSigmaMask, s)
-    # np.save('/home/as/r', roiSigmaMask)
-    label_img = label(roiSigmaMask)
+    s = morphology.disk(settings['automatic_roi_morph_disk_radius'])
+    roi_sigma_mask = utils.sigma_test(frame_diff, settings['automatic_roi_selection_sigma_mult'])
+    roi_sigma_mask = morphology.erosion(roi_sigma_mask, s)
+    roi_sigma_mask = morphology.dilation(roi_sigma_mask, s)
+    # np.save('/home/as/r', roi_sigma_mask)
+    label_img = label(roi_sigma_mask)
     regions = regionprops(label_img)
     if len(regions) > 0:
         bbox = regions[np.argmax([r.area for r in regions])].bbox
@@ -43,62 +41,60 @@ def roiDetection(filename_in,
         return None
 
 
-def roiSelection(fnameIn):
-    vIn = cv2.VideoCapture(fnameIn)
+# this function serves for a manual selection of the bounding box from the
+# averaged temprial image differentiation
+def roi_selection(fname_in):
+    v_in = cv2.VideoCapture(fname_in)
     # reading first frame
-    ret, frameMean = vIn.read()
-    frameMean = cv2.cvtColor(frameMean, cv2.COLOR_RGB2GRAY)
-    n_frames = int(vIn.get(cv2.CAP_PROP_FRAME_COUNT))
+    ret, frame_mean = v_in.read()
+    frame_mean = cv2.cvtColor(frame_mean, cv2.COLOR_RGB2GRAY)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
 
     while True:
-        ret, frame = vIn.read()
+        ret, frame = v_in.read()
         if ret == 0:
             break
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = frame.astype(np.float32)
         frame /= np.max(frame[:])
-        frameMean = frameMean + frame
-    frameMean = frameMean / n_frames
-    frameMeanNormalized = frameMean / np.max(frameMean[:])
-    cv2.namedWindow('roi', 2)
-    # cv2.resizeWindow('roi', 600, 600)
-    bbox = cv2.selectROI("roi", np.max(frameMeanNormalized[:]) - frameMeanNormalized, False, False)
+        frame_mean = frame_mean + frame
+    frame_mean = frame_mean / n_frames
+    frame_mean_normalized = frame_mean / np.max(frame_mean[:])
+    cv2.namedWindow('roi', 2)  # automatic sizing of the window
+    bbox = cv2.selectROI("roi", np.max(frame_mean_normalized[:]) - frame_mean_normalized, False, False)
     return bbox
 
 
-def roi(filenameIn, filenameOut,
-        automaticROISelection,
-        automaticROISelectionSigmaMult=3,
-        morph_disk_radius=5):
+def roi(filename_in, filename_out, settings):
     # automatic selection of bounding box
-    if automaticROISelection > 0:
-        bbox = roiDetection(filenameIn, morph_disk_radius, automaticROISelectionSigmaMult)
+    if settings['automatic_roi_selection'] > 0:
+        bbox = roi_detection(filename_in, settings)
     else:
-        bbox = roiSelection(filenameIn)
+        bbox = roi_selection(filename_in)
 
     # opening reader for the video
-    vIn = cv2.VideoCapture(filenameIn)
-    n_frames = int(vIn.get(cv2.CAP_PROP_FRAME_COUNT))
+    v_in = cv2.VideoCapture(filename_in)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
     # reading first frame
-    ret, frame = vIn.read()
+    ret, frame = v_in.read()
 
     # number of frames of the input video
-    fps = vIn.get(cv2.CAP_PROP_FPS)
+    fps = v_in.get(cv2.CAP_PROP_FPS)
     # the output video
-    vOut = cv2.VideoWriter(filenameOut, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (bbox[2], bbox[3]))
+    v_out = cv2.VideoWriter(filename_out, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (bbox[2], bbox[3]))
 
     while ret:
-        frameROI = utils.cutFrame(frame, bbox)
-        ret, frame = vIn.read()
+        frameROI = utils.cut_frame(frame, bbox)
+        ret, frame = v_in.read()
         cv2.imshow('roi', frameROI)
         cv2.waitKey(1)
-        vOut.write(frameROI)
+        v_out.write(frameROI)
     cv2.destroyAllWindows()
-    vOut.release()
+    v_out.release()
     return True
 
 
-def str2tracker(trackerName):
+def str2tracker(tracker_name):
     OPENCV_OBJECT_TRACKERS = {
         "csrt": cv2.TrackerCSRT_create,
         "kcf": cv2.TrackerKCF_create,
@@ -111,10 +107,10 @@ def str2tracker(trackerName):
 
     # grab the appropriate object tracker using our dictionary of
     # OpenCV object tracker objects
-    return OPENCV_OBJECT_TRACKERS[trackerName]()
+    return OPENCV_OBJECT_TRACKERS[tracker_name]()
 
 
-def initTrackers(trackers, frame, rois, tracker):
+def init_trackers(trackers, frame, rois, tracker):
     for i, roi in enumerate(rois):
         # update only a newly selected rois
         if roi is not None:
@@ -124,31 +120,31 @@ def initTrackers(trackers, frame, rois, tracker):
 
 
 # this function returns list of detected frames for the window selected in the first selected frame
-def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName):
+def tracking_selection(filename_in, filename_out_video, filename_out_csv, settings):
     # opening reader for the video
-    vIn = cv2.VideoCapture(filenameIn)
+    v_in = cv2.VideoCapture(filename_in)
 
-    nFrames = int(vIn.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = vIn.get(cv2.CAP_PROP_FPS)
-    nTrackers = 10
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = v_in.get(cv2.CAP_PROP_FPS)
+    n_trackers = 10
 
-    ret, frame = vIn.read()
+    ret, frame = v_in.read()
     # initial bounding boxes around the
     MOTGUI = MOTTrackingROI(frame, rois=None, name="Select Bounding Boxes around Tracked Objects")
-    initialROIs = MOTGUI.getROIs()
+    initial_roi = MOTGUI.getROIs()
 
     # initializing tracker, 10 trackers x nFrames
-    tracks = [[None] * nTrackers for _ in range(nFrames)]
-    trackers = [None] * nTrackers
+    tracks = [[None] * n_trackers for _ in range(n_frames)]
+    trackers = [None] * n_trackers
 
-    tracks[0] = initialROIs
-    trackers = initTrackers(trackers, frame, initialROIs, trackerName)
+    tracks[0] = initial_roi
+    trackers = init_trackers(trackers, frame, initial_roi, settings['tracker'])
 
-    frameId = 1  # first one was used for initializaiton
+    frame_id = 1  # first one was used for initializaiton
     timeout = 0
     while True:
-        vIn.set(cv2.CAP_PROP_POS_FRAMES, frameId)
-        ret, frame = vIn.read()
+        v_in.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
+        ret, frame = v_in.read()
         # end of the video or fail
         if ret == 0:
             break
@@ -159,22 +155,22 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
                 continue
             ok, bbox = tracker.update(frame)
             if ok:
-                tracks[frameId][i] = bbox
+                tracks[frame_id][i] = bbox
 
-        cv2.imshow("tracking", utils.drawROIs(frame, tracks[frameId]))
+        cv2.imshow("tracking", utils.draw_ROIs(frame, tracks[frame_id]))
 
         key = cv2.waitKey(timeout)
         # go backwards
         if key == ord('a'):
-            frameId = np.maximum(0, frameId - 1)
-            vIn.set(cv2.CAP_PROP_POS_FRAMES, frameId)
+            frame_id = np.maximum(0, frame_id - 1)
+            v_in.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
         # go forward
         if key == ord('d'):
-            frameId = np.minimum(frameId + 1, nFrames)
-            vIn.set(cv2.CAP_PROP_POS_FRAMES, frameId)
+            frame_id = np.minimum(frame_id + 1, n_frames)
+            v_in.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
         if key == ord('s'):
-            MOTGUI = MOTTrackingROI(frame, tracks[frameId])
-            initTrackers(trackers, frame, MOTGUI.getROIs(), trackerName)
+            MOTGUI = MOTTrackingROI(frame, tracks[frame_id])
+            init_trackers(trackers, frame, MOTGUI.getROIs(), settings['tracker'])
         # play
         if key == ord('p'):
             if timeout == 0:
@@ -184,7 +180,7 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
 
         # if the autoplay is active, add the frames automatically
         if timeout != 0:
-            frameId = frameId + 1
+            frame_id = frame_id + 1
 
         if key == ord('q'):
             break
@@ -192,35 +188,38 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
     cv2.destroyAllWindows()
 
     # exporting data
-    vIn.release()
-    vIn = cv2.VideoCapture(filenameIn)
-    nFrames = int(vIn.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(vIn.get(cv2.CAP_PROP_FPS))
-    vInWidth = int(vIn.get(cv2.CAP_PROP_FRAME_WIDTH))
-    vInHeight = int(vIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    v_in.release()
+    v_in = cv2.VideoCapture(filename_in)
+    n_frames = int(v_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(v_in.get(cv2.CAP_PROP_FPS))
+    v_in_width = int(v_in.get(cv2.CAP_PROP_FRAME_WIDTH))
+    v_in_height = int(v_in.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    vOut = cv2.VideoWriter(filenameOutVideo, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (vInWidth, vInHeight))
-    volumes = [[None] * nFrames for _ in range(nTrackers)]
+    volumes = [[None] * n_frames for _ in range(n_trackers)]
 
-    for frameId in range(nFrames):
-        ret, frame = vIn.read()
-        for t in range(nTrackers):
-            bbox = tracks[frameId][t]
+    if settings['tracker_video_output']:
+        v_out = cv2.VideoWriter(filename_out_video, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (v_in_width, v_in_height))
+
+    for frame_id in range(n_frames):
+        ret, frame = v_in.read()
+        for t in range(n_trackers):
+            bbox = tracks[frame_id][t]
             if bbox is None:
                 continue
-            volumes[t][frameId] = utils.cutFrame(frame.copy(), bbox)
+            volumes[t][frame_id] = utils.cut_frame(frame.copy(), bbox)
+        if settings['tracker_video_output']:
+            v_out.write(utils.draw_ROIs(frame, tracks[frame_id]))
 
-        vOut.write(utils.drawROIs(frame, tracks[frameId]))
-    vOut.release()
+    if settings['tracker_video_output']:
+        v_out.release()
 
     #
     # saving the volumes
     #
-
     # list of frames  where each item is list of tracks to list of tracers where each item is a list of frames
-    tracksTransposed = [list(i) for i in zip(*tracks)]
-    for t in range(nTrackers):
-        V = utils.resizeListOfImages(volumes[t])
+    tracks_transposed = [list(i) for i in zip(*tracks)]
+    for t in range(n_trackers):
+        V = utils.resize_image_list(volumes[t])
 
         # saving the volume
         if V.ravel().sum() > 0:  # testing if the volume is not empty, if sum(V[:]) == 0, then there is nothing to save
@@ -229,21 +228,21 @@ def trackingSelection(filenameIn, filenameOutVideo, filenameOutCsv, trackerName)
             # filtering out the ignored frames
             V = V[..., np.logical_and(frameSum > 0, np.isfinite(frameSum))]
 
-            filenameOutputVolume = filenameOutVideo.split('.')[:-1][0] + '_' + str(t)
+            filenameOutputVolume = filename_out_video.split('.')[:-1][0] + '_' + str(t)
             np.save(filenameOutputVolume, V)
             print('saved ' + filenameOutputVolume)
             #
 
-            filenameOutputBBOXCsv = filenameOutCsv.split('.')[:-1][0] + '_' + str(t) + '.csv'
-            tt = tracksTransposed[t]
+            filename_output_bbox_csv = filename_out_csv.split('.')[:-1][0] + '_' + str(t) + '.csv'
+            tt = tracks_transposed[t]
             # saving only the non empty 4-element bounding boxes
-            f = open(filenameOutputBBOXCsv, 'w')
+            f = open(filename_output_bbox_csv, 'w')
             f.write(utils.bbox2str(tt))
             f.close()
-            print('saved ' + filenameOutputBBOXCsv)
+            print('saved ' + filename_output_bbox_csv)
 
 
-def video2volumeSelection(filenameIn, filenameOut):
+def video_to_volume(filenameIn, filenameOut):
     # opening reader for the video
     v_in = cv2.VideoCapture(filenameIn)
 

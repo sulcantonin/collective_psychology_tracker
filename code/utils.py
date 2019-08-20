@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def drawROIs(img, rois):
+def draw_ROIs(img, rois):
     if img is not None and len(rois) > 0:
         for t, bbox in enumerate(rois):
             if bbox is not None:
@@ -15,7 +15,7 @@ def drawROIs(img, rois):
     return img
 
 
-def resizeListOfImages(list_of_images, sz=None):
+def resize_image_list(list_of_images, sz=None):
     # we want to return a tensor [height,width,3,frame]
 
     # calculating average width and height of no width and height is given
@@ -53,11 +53,11 @@ def bbox2str(bboxes):
     return out
 
 
-def sigmaTest(X, sigmaMult):
+def sigma_test(X, sigmaMult):
     return np.abs((X[:] - np.mean(X[:]))) > sigmaMult * np.std(X[:])
 
 
-def cutFrame(frame, bbox):
+def cut_frame(frame, bbox):
     p1 = [int(bbox[0]), int(bbox[1])]
     p2 = [int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3])]
 
@@ -73,7 +73,7 @@ def cutFrame(frame, bbox):
 
 
 
-def writeVolume2Video(V, filenameOut):
+def write_volume_to_video(V, filenameOut):
     width = V.shape[1]
     height = V.shape[0]
     vOut = cv2.VideoWriter(filenameOut, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 5, (width, height))
@@ -85,7 +85,7 @@ def writeVolume2Video(V, filenameOut):
 
 # normalization of the input images, it would be better if this remain mystery
 def normalize(X):
-    X = X.astype(np.float32) / 255
+    X = X.astype(np.float32) / X.max()
     for i in range(X.shape[-1]):
         X[..., i] = X[..., i] - np.mean(X[..., i].ravel())
         X[..., i] = X[..., i] / np.sqrt(np.sum(X[..., i].ravel() ** 2))
