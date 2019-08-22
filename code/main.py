@@ -5,84 +5,91 @@ import configparser
 
 root = tk.Tk()
 
-#
-# loading configuration
-#
-config = configparser.ConfigParser()
-config.read('./config.ini')
 
-settings = dict()
+def user_left_output_empty(filename_in, file_suffix, file_type=None):
+    path = filename_in.split('/')[:-1]
+    filename = filename_in.split('/')[-1].split('.')[0]
+    if file_type is None:
+        file_type = filename_in.split('/')[-1].split('.')[-1]
 
-settings['automatic_roi_selection'] = config.getboolean('default', 'automatic_roi_selection', fallback=1)
-settings['automatic_roi_selection_sigma_mult'] = config.getfloat('default', 'automatic_roi_selection_sigma_mult',
-                                                                 fallback=3)
-settings['atomatic_roi_morph_disk_radius'] = config.getint('default','automatic_roi_morph_disk_radius',fallback=5)
-settings['tracker'] = config.get('default','tracker', fallback='mil')
-
-settings['tracker_video_output'] = config.getboolean('default', 'tracker_video_output', fallback=1)
-
-def userLeftOutputEmpty(filenameIn, fileSuffix, fileType=None):
-    path = filenameIn.split('/')[:-1]
-    fname = filenameIn.split('/')[-1].split('.')[0]
-    if fileType is None:
-        fileType = filenameIn.split('/')[-1].split('.')[-1]
-
-    return ''.join([p + '/' for p in path]) + fname + '_' + fileSuffix + '.' + fileType
+    return ''.join([p + '/' for p in path]) + filename + '_' + file_suffix + '.' + file_type
 
 
-def roiSelectionCallback():
-    filenameIn = tk.filedialog.askopenfilename()
+def roi_selection_callback():
+    filename_in = tk.filedialog.askopenfilename()
     # nothing chosen
-    if len(filenameIn) == 0:
+    if len(filename_in) == 0:
         return
 
-    filenameOut = tk.filedialog.asksaveasfilename(title='output video file')
+    filename_out = tk.filedialog.asksaveasfilename(title='output video file')
 
-    if filenameOut is "":
-        filenameOut = userLeftOutputEmpty(filenameIn, 'roi')
+    if filename_out is "":
+        filename_out = user_left_output_empty(filename_in, 'roi')
 
-    roi(filenameIn, filenameOut, settings)
+    roi(filename_in, filename_out, settings)
 
 
-def trackingSelectionCallback():
-    filenameIn = tk.filedialog.askopenfilename()
+def tracking_selection_callback():
+    filename_in = tk.filedialog.askopenfilename()
     # nothing chosen
-    if len(filenameIn) == 0:
+    if len(filename_in) == 0:
         return
 
-    filenameOutVideo = tk.filedialog.asksaveasfilename(title='output video file')
-    filenameOutCsv = tk.filedialog.asksaveasfilename(title='output csv file')
+    filename_out_video = tk.filedialog.asksaveasfilename(title='output video file')
+    filename_out_csv = tk.filedialog.asksaveasfilename(title='output csv file')
 
-    if filenameOutVideo is "":
-        filenameOutVideo = userLeftOutputEmpty(filenameIn, 'tracking')
-    if filenameOutCsv is "":
-        filenameOutCsv = userLeftOutputEmpty(filenameIn, 'tracking', 'csv')
-    tracking_selection(filenameIn, filenameOutVideo, filenameOutCsv, settings)
-
-
-def video2volumeSelectionCallback():
-    filenameIn = tk.filedialog.askopenfilename()
-    filenameOut = tk.filedialog.asksaveasfilename()
-
-    if filenameOut is "":
-        filenameOut = userLeftOutputEmpty(filenameIn, '', 'npy')
-
-    video_to_volume(filenameIn, filenameOut)
+    if filename_out_video is "":
+        filename_out_video = user_left_output_empty(filename_in, 'tracking')
+    if filename_out_csv is "":
+        filename_out_csv = user_left_output_empty(filename_in, 'tracking', 'csv')
+    tracking_selection(filename_in, filename_out_video, filename_out_csv, settings)
 
 
-def autoencoderCallback():
+def video2volume_selection_callback():
+    filename_in = tk.filedialog.askopenfilename()
+    filename_out = tk.filedialog.asksaveasfilename()
+
+    if filename_out is "":
+        filename_out = user_left_output_empty(filename_in, '', 'npy')
+
+    video_to_volume(filename_in, filename_out)
+
+
+def autoencoder_callback():
     autoencoder_window = tk.Toplevel(root)
     aeg.autoencoder_gui(autoencoder_window)
 
+def run(configure_script_name = 'config.ini'):
+    #
+    # loading configuration
+    #
+    config = configparser.ConfigParser()
+    config.read(configure_script_name)
 
-buttonROISelection = tk.Button(root, text="ROI Selection", command=roiSelectionCallback)
-buttonTrackingSelection = tk.Button(root, text="Tracking Selection", command=trackingSelectionCallback)
-buttonVideo2volumeSelection = tk.Button(root, text="Transform video into Volume",
-                                        command=video2volumeSelectionCallback)
-buttonAutoencoderSelection = tk.Button(root, text="Autoencoder", command=autoencoderCallback)
+    settings = dict()
 
-buttonROISelection.pack()
-buttonTrackingSelection.pack()
-buttonVideo2volumeSelection.pack()
-buttonAutoencoderSelection.pack()
-root.mainloop()
+    settings['automatic_roi_selection'] = config.getboolean('default', 'automatic_roi_selection', fallback=1)
+    settings['automatic_roi_selection_sigma_mult'] = config.getfloat('default', 'automatic_roi_selection_sigma_mult',
+                                                                     fallback=3)
+    settings['atomatic_roi_morph_disk_radius'] = config.getint('default', 'automatic_roi_morph_disk_radius', fallback=5)
+    settings['tracker'] = config.get('default', 'tracker', fallback='mil')
+
+    settings['tracker_video_output'] = config.getboolean('default', 'tracker_video_output', fallback=1)
+
+    button_roi_selection = tk.Button(root, text="ROI Selection", command=roi_selection_callback)
+    button_tracking_selection = tk.Button(root, text="Tracking Selection", command=tracking_selection_callback)
+    button_video2volume_selection = tk.Button(root, text="Transform video into Volume",
+                                              command=video2volume_selection_callback)
+    button_autoencoder_selection = tk.Button(root, text="Autoencoder", command=autoencoder_callback)
+
+    button_roi_selection.pack()
+    button_tracking_selection.pack()
+    button_video2volume_selection.pack()
+    button_autoencoder_selection.pack()
+    root.mainloop()
+
+def main():
+    run()
+
+if __name__ == '__main__':
+    main()
