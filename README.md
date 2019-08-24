@@ -60,46 +60,46 @@ After quitting (pressing the **Q**) the program automatically creates for each t
 Additionally, for validation, the program creates a video with detected bounding boxes (can be turned off via tracker_video_output = 0)
 
 ## Extracting the repetitive patterns from the video
-This part uses the autoencoder architecture. There are plenty of tutorials introducing autoencoders, for example https://www.jeremyjordan.me/autoencoders/
+This part uses the autoencoder architecture. There are plenty of tutorials introducing autoencoders, for example, https://www.jeremyjordan.me/autoencoders/
 
 ![Autoencoder](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/cnn-ae.png "Autoencoder")
 
-An intuitive explanation of an autoencder is it is a black box (*convolutional neural net*), which has a bottleneck in form a latent code which has carries much less information than the input (*image*). During the training, you are giving the images to the input and expect that you will get the same image on the inut, but the image was squeezed into the minimal representation of the bottleneck (*latent code*). The minor changes in the image are largely visible in change of the latent code and by study of this code, we can study anomalies of the studied object or find repetitive patterns. As result, when the network is tranined, each frame can be compressed to its latent code. 
+An intuitive explanation of an autoencoder is it is a black box (*convolutional neural net*), which has a bottleneck in the form a latent code which has carries much less information than the input (*image*). During the training, you are giving the images to the input and expect that you will get the same image on the input, but the image was squeezed into the minimal representation of the bottleneck (*latent code*). The minor changes in the image are largely visible in a change of the latent code and by the study of this code, we can investigate anomalies of the examined object or find repetitive patterns. As a result, when the network is trained, each frame can be compressed to its latent code. 
 
-The GUI prodives access to a very simple configuration of the network, i.e. number of convolutional layers, size of the convolutions, number of feature maps etc. 
+The GUI provides access to a very simple configuration of the network, i.e. number of convolutional layers, size of the convolutions, number of feature maps, etc. 
 
 ![Convolutions](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/conv.jpg "Convolution")
 
-The GUI looks like it is shown in image below:
+The GUI looks like it is shown in the image below:
 
 ![Autoencoder GUI](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/ae_gui.png "Autoencoder GUI")
 
-The latent code is often highly dimensional, but we would like to have a feeling how does it look like in a simple 1D plot. We calculate mean of absolute value of each frame which turns out to be sufficient to preserve some information (that is what you see on the right top plot, hoziontal axis is a frame number, vertical is a corrsponding latent code)
+The latent code is often highly dimensional, but we would like to have a feeling how does it look like in a simple 1D plot. We calculate mean of the absolute value of each frame which turns out to be sufficient to preserve some information (that is what you see on the right top plot, a horizontal axis is a frame number, vertical is a corresponding latent code)
 
-You can load the volume which can be either your input or an atrbitray four dimensional volume. The volume produced by tracking has following format (row major order as numpy): height, width, channels, frames. 
+You can load the volume which can be either your input or an arbitrary four-dimensional volume. The volume produced by tracking has the following format (row-major order as numpy): height, width, channels, frames. 
 
-The two graps on the right show the mean value of absolute value of the latent code (top) and current L2 loss of traning (bottom). **If the video in the volume contains some repetitive visual content, the peaks in the latent code should be present for the frames when the event happens**. 
+The two graphs on the right show the mean value of the absolute value of the latent code (top) and current L2 loss of training (bottom). **If the video in the volume contains some repetitive visual content, the peaks in the latent code should be present for the frames when the event happens**. 
 
 The fields:
 * *Volume Size* is current size of the input volume 
-* *Filter Sizes* is size of the convolutional filter (the smallest is 3, I recommend you to keep it like this). For instance the convolution in the figure above is 3x3 convolution
-* *Filter Sizes* is number of features. It says how many separate convolutions we want to have on each level. The number of elements should be identical as *Filter Sizes*
+* *Filter Sizes* is the size of the convolutional filter (the smallest is 3, I recommend you to keep it like this). For instance, the convolution in the figure above is 3x3 convolution
+* *Filter Sizes* is a number of features. It says how many separate convolutions we want to have on each level. The number of elements should be identical as *Filter Sizes*
 
 The default configuration works relatively well, adding more complexity usually causes trouble and it is often better to just remove one layer rather than add.
 
-After these parameters are set the network can be iniitalized by the button *Initialize Network*
+After these parameters are set the network can be initialized by the button *Initialize Network*
 
 The fields:
-* *Learning Rate* say how big the steps to train network should be. The rule of thumb is that when no changes in the latent code and loss during traning are noticed, it is necessary to increase the learning rate. When the latent code changes drastically and the loss does not get lower it is ncessary to decrease the learning rate. 
-* *Training Epochs* say how many interations we should perform. Since we do not have enough data it is sufficient to perform only very frew interations (like 20). When loss does not change, we perfromed uncessary many iterations. 
-* *Band* is says which frequencies are filtered. The latent codes is usually very bumpy and higher frequencies can be filtered. The lower the value gets the narrowed the pass band gets which means that more higher freuencies are filtered and the latent code get intuitiviely smoother, see the figure below 
+* *Learning Rate* say how big the steps to train network should be. The rule of thumb is that when no changes in the latent code and loss during training are noticed, it is necessary to increase the learning rate. When the latent code changes drastically and the loss does not get lower it is necessary to decrease the learning rate. 
+* *Training Epochs* say how many iterations we should perform. Since we do not have enough data it is sufficient to perform only very few interactions (like 20). When the loss does not change, we performed unnecessary many iterations. 
+* *Band* is says which frequencies are filtered. The latent codes are usually very bumpy and higher frequencies can be filtered. The lower the value gets the narrowed the passband gets which means that higher frequencies are filtered and the latent code get intuitively smoother, see the figure below 
 
 ![Band](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/band.png "Band")
 
-Once you have everything set, press Train Network. In case nothing happens for few seconds, it probably means that the input volume is too large. If the loss (graph in right bottom) does not go down, follow the suggestions about *Learning Rate* above and once you are done, you can save the results:
+Once you have everything set, press Train Network. In case nothing happens for a few seconds, it probably means that the input volume is too large. If the loss (graph in the right bottom) does not go down, follow the suggestions about *Learning Rate* above and once you are done, you can save the results:
 
 * peaks in the CSV files. Peaks are the red dots on the latent code they should correspond to the repetitive pattern
-* video with visualisation of the peaks in the top left corner. It reproduces the input volume and create a video where top left corner has a small black box when the peak (the red dot) was detect.
+* video with visualization of the peaks in the top left corner. It reproduces the input volume and creates a video where the top left corner has a small black box when the peak (the red dot) was detected.
 
 # Installation
 The library runs on Python 3.6. 
