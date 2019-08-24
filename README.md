@@ -33,13 +33,13 @@ The tracking GUI provides an interface to the state-of-the-art tracking model-ba
 
 The trackers are the following:
 
-* csrt, based on Alan Lukezic, Tomas Vojir, Luka Cehovin Zajc, Jiri Matas, and Matej Kristan. Discriminative correlation filter tracker with channel and spatial reliability. International Journal of Computer Vision, 2018.
-* kcf, bassed on J. F. Henriques, R. Caseiro, P. Martins, and J. Batista. Exploiting the circulant structure of tracking-by-detection with kernels. In proceedings of the European Conference on Computer Vision, 2012 and M. Danelljan, F.S. Khan, M. Felsberg, and J. van de Weijer. Adaptive color attributes for real-time visual tracking. In Computer Vision and Pattern Recognition (CVPR), 2014 IEEE Conference on, pages 1090–1097, June 2014.
-* boosting, based on Helmut Grabner, Michael Grabner, and Horst Bischof. Real-time tracking via on-line boosting. In BMVC, volume 1, page 6, 2006.
-* mil, based on Boris Babenko, Ming-Hsuan Yang, and Serge Belongie. Visual tracking with online multiple instance learning. In Computer Vision and Pattern Recognition, 2009. CVPR 2009. IEEE Conference on, pages 983–990. IEEE, 2009. 
-* tld, based on Zdenek Kalal, Krystian Mikolajczyk, and Jiri Matas. Tracking-learning-detection. Pattern Analysis and Machine Intelligence, IEEE Transactions on, 34(7):1409–1422, 2012.
-* medianflow, based on Zdenek Kalal, Krystian Mikolajczyk, and Jiri Matas. Forward-backward error: Automatic detection of tracking failures. In Pattern Recognition (ICPR), 2010 20th International Conference on, pages 2756–2759. IEEE, 2010.
-* mosse, based on David S. Bolme, J. Ross Beveridge, Bruce A. Draper, and Man Lui Yui. Visual object tracking using adaptive correlation filters. In Conference on Computer Vision and Pattern Recognition (CVPR), 2010.
+* **csrt**, based on Alan Lukezic, Tomas Vojir, Luka Cehovin Zajc, Jiri Matas, and Matej Kristan. Discriminative correlation filter tracker with channel and spatial reliability. International Journal of Computer Vision, 2018.
+* **kcf**, bassed on J. F. Henriques, R. Caseiro, P. Martins, and J. Batista. Exploiting the circulant structure of tracking-by-detection with kernels. In proceedings of the European Conference on Computer Vision, 2012 and M. Danelljan, F.S. Khan, M. Felsberg, and J. van de Weijer. Adaptive color attributes for real-time visual tracking. In Computer Vision and Pattern Recognition (CVPR), 2014 IEEE Conference on, pages 1090–1097, June 2014.
+* **boosting**, based on Helmut Grabner, Michael Grabner, and Horst Bischof. Real-time tracking via on-line boosting. In BMVC, volume 1, page 6, 2006.
+* **mil**, based on Boris Babenko, Ming-Hsuan Yang, and Serge Belongie. Visual tracking with online multiple instance learning. In Computer Vision and Pattern Recognition, 2009. CVPR 2009. IEEE Conference on, pages 983–990. IEEE, 2009. 
+* **tld**, based on Zdenek Kalal, Krystian Mikolajczyk, and Jiri Matas. Tracking-learning-detection. Pattern Analysis and Machine Intelligence, IEEE Transactions on, 34(7):1409–1422, 2012.
+* **medianflow**, based on Zdenek Kalal, Krystian Mikolajczyk, and Jiri Matas. Forward-backward error: Automatic detection of tracking failures. In Pattern Recognition (ICPR), 2010 20th International Conference on, pages 2756–2759. IEEE, 2010.
+* **mosse**, based on David S. Bolme, J. Ross Beveridge, Bruce A. Draper, and Man Lui Yui. Visual object tracking using adaptive correlation filters. In Conference on Computer Vision and Pattern Recognition (CVPR), 2010.
 
 The type of tracker used for object tracking object(s) can be chosen in config.ini, field *tracker*.
 
@@ -52,13 +52,25 @@ To move to next frame, press **D**, to move to backward, press **A**, to switch 
 ![Selecting of Objects to Track](https://github.com/collective_psychology_tracker/img/tracking.png "Selecting of Objects to Track")
 
 After quitting (pressing the **Q**) the program automatically creates for each tracklet a file which is called *$filename_$trackletid*, where $filename is input video filename (without suffix) and $trackletid a number <0,9> which corresponds to an ID of the tracked object. The files for each tracklet are:
-*a CSV file with a bounding box [left-top-x,left-top-y,right-bottom-x,right-bottom-y] 
+* a CSV file with a bounding box [left-top-x,left-top-y,right-bottom-x,right-bottom-y] 
 * a npy volume (can be huge) which is cut-out of the bounding box resized to the mean size of the bounding boxes during the tracking (can be disabled by tracker_npyvolume_output = 0 in config.ini)
 
 Additionally, for validation, the program creates a video with detected bounding boxes (can be turned off via tracker_video_output = 0)
 
 ## Extracting the repetitive patterns from the video
-This is the core part of the tool. 
+This part uses the autoencoder architecture. There are plenty of tutorials introducing autoencoders, for example https://www.jeremyjordan.me/autoencoders/
+
+An intuitive explanation of an autoencder is it is a black box (*convolutional neural net*), which has a bottleneck in form a latent code which has carries much less information than the input (*image*). During the training, you are giving the images to the input and expect that you will get the same image on the inut, but the image was squeezed into the minimal representation of the bottleneck (*latent code*). The minor changes in the image are largely visible in change of the latent code and by study of this code, we can study anomalies of the studied object or find repetitive patterns. 
+
+The GUI prodives access to a very simple configuration of the network, i.e. number of convolutional layers, size of the convolutions, number of feature maps etc. 
+
+![Convolutions](https://github.com/collective_psychology_tracker/materials/img/conv.jpg "Convolution")
+
+![Autoencoder](https://github.com/collective_psychology_tracker/img/materials/cnn-ae.png "Autoencoder")
+
+![Autoencoder GUI](https://github.com/collective_psychology_tracker/img/ae_gui.png "Autoencoder GUI")
+
+Furthermore, because the latent code is still highly dimensional, the code is furhter squeezed into 
 
 # Installation
 The library runs on Python 3.6. 
@@ -79,9 +91,9 @@ Install the following packages, the easiest way is to simply run pip3 install $l
 - opencv-contrib-python
 - PeakUtils
 - skimage
-- TKInter
 
-Unfortunately, the installation of all these libraries is necessary to have access to all features of the tool.
+
+Unfortunately, the last library *TKInter* seems to be separated from pip and need an explicit installation 
 
 # Running the App #
 Once you have made all the steps necessary to run the program, you can run the program by simply running the main.py script as a python script:
