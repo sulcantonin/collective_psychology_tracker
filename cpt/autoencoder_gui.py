@@ -15,12 +15,18 @@ class autoencoder_gui:
         self.window = window
 
         self.load_input_button = tk.Button(window, text="Load NPY Input", command=self.load_input_callback)
-        self.load_input_button.grid(row=0, column=0)
-        self.load_input_text = tk.Text(window, height=1, width=20)
-        self.load_input_text.grid(row=0, column=1)
+        self.load_input_button.grid(row=0, column=0, columnspan = 2)
+
+        self.volume_size_text = tk.Text(window, height=1, width=20)
+        self.volume_size_text.grid(row=1, column=0)
+        self.volume_size_text.configure(state='normal')
+        self.volume_size_text.insert(tk.END, 'Volume Size:')
+        self.volume_size_text.configure(state='disabled')
+        self.volume_size_string = tk.Text(window, height=1, width=20)
+        self.volume_size_string.grid(row=1, column=1, columnspan = 1)
 
         self.filter_sizes_text = tk.Text(window, height=1, width=20)
-        self.filter_sizes_text.grid(row=1, column=0)
+        self.filter_sizes_text.grid(row=2, column=0)
         self.filter_sizes_text.configure(state='normal')
         self.filter_sizes_text.insert(tk.END, 'Filter Sizes:')
         self.filter_sizes_text.configure(state='disabled')
@@ -28,18 +34,18 @@ class autoencoder_gui:
         self.filter_sizes_string = tk.StringVar()
         self.filter_sizes_string.set('3, 3, 3, 3')
         self.filter_sizes_entry = tk.Entry(window, textvariable=self.filter_sizes_string)
-        self.filter_sizes_entry.grid(row=1, column=1)
+        self.filter_sizes_entry.grid(row=2, column=1)
 
         self.n_filters_text = tk.Text(window, height=1, width=20)
-        self.n_filters_text.grid(row=2, column=0)
+        self.n_filters_text.grid(row=3, column=0)
         self.n_filters_text.configure(state='normal')
         self.n_filters_text.insert(tk.END, 'Filter Sizes:')
         self.n_filters_text.configure(state='disabled')
         self.n_filters_string = tk.StringVar()
         self.n_filters_string.set('3, 10, 10, 10')
         self.n_filters_entry = tk.Entry(window, textvariable=self.n_filters_string)
-        self.n_filters_entry.grid(row=2, column=1)
-
+        self.n_filters_entry.grid(row=3, column=1)
+        '''
         self.lambda_L1_text = tk.Text(window, height=1, width=20)
         self.lambda_L1_text.grid(row=3, column=0)
         self.lambda_L1_text.configure(state='normal')
@@ -49,7 +55,7 @@ class autoencoder_gui:
         self.lambda_l1_string.set('100.0')
         self.lambda_l1_entry = tk.Entry(window, textvariable=self.lambda_l1_string)
         self.lambda_l1_entry.grid(row=3, column=1)
-
+        '''
         self.init_autoencoder_button = tk.Button(window, text="Initialize Network",
                                                  command=self.init_autoencoder_callback)
         self.init_autoencoder_button.grid(row=4, column=0, columnspan=2)
@@ -115,8 +121,8 @@ class autoencoder_gui:
     def load_input_callback(self):
         filename_in = filedialog.askopenfilename(title="Load NUMPY Volume", filetypes=(("npy files", "*.npy"),))
         self.V = np.load(filename_in)
-        self.load_input_text.delete(1.0, tk.END)
-        self.load_input_text.insert(tk.END, 'Volume ' + str(self.V.shape))
+        self.volume_size_string.delete(1.0, tk.END)
+        self.volume_size_string.insert(tk.END, str(self.V.shape))
 
     def save_results_callback(self):
         if self.V is None or self.ae is None:
@@ -130,8 +136,7 @@ class autoencoder_gui:
                 self.peaks is not None:
 
             V_out = self.V.copy()
-            V_out[0:5, 0:5, 0, self.peaks] = V_out.max()
-            V_out[0:5, 0:5, 1:3, self.peaks] = V_out.max()
+            V_out[0:5, 0:5, :, self.peaks] = 0
             V_out = V_out.astype(np.uint8)
 
             utils.write_volume_to_video(V_out, filename_out_video)
@@ -145,12 +150,10 @@ class autoencoder_gui:
             return
         learning_rate = float(self.learning_rate_string.get())
         n_epochs = int(self.n_epochs_entry.get())
-        lambda_l1 = float(self.lambda_l1_string.get())
         band = int(self.band_string.get())
 
         assert learning_rate > 0
         assert n_epochs > 0
-        assert lambda_l1 >= 0
         assert band > 0
 
         n_frames = self.V.shape[-1]
@@ -160,10 +163,10 @@ class autoencoder_gui:
         self.optimizer, self.session = ae.init_training(self.ae, learning_rate)
 
         for epoch in range(n_epochs):
-            y, z, cost = ae.training_epoch(self.ae, self.optimizer, self.session, training_data, lambda_l1)
+            y, z, cost = ae.training_epoch(self.ae, self.optimizer, self.session, training_data, 0.0)
             print('epoch {0}/{1} cost {2}'.format(epoch, n_epochs, cost))
 
-            y, z, cost = ae.training_epoch(self.ae, self.optimizer, self.session, training_data, lambda_l1)
+            y, z, cost = ae.training_epoch(self.ae, self.optimizer, self.session, training_data, 0.0)
 
             self.latent_code = np.mean(np.abs(z.reshape(z.shape[0], -1)), 1)
             self.latent_code_mean_filtered = ae.fft_low_pass_filter(self.latent_code, band)

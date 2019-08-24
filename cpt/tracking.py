@@ -197,6 +197,7 @@ def tracking_selection(filename_in, filename_out_video, filename_out_csv, settin
 
     volumes = [[None] * n_frames for _ in range(n_trackers)]
 
+    # saving the video with all tracklets visualised
     if settings['tracker_video_output']:
         v_out = cv2.VideoWriter(filename_out_video, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (v_in_width, v_in_height))
 
@@ -214,7 +215,7 @@ def tracking_selection(filename_in, filename_out_video, filename_out_csv, settin
         v_out.release()
 
     #
-    # saving the volumes
+    # saving results (cvs, volume)
     #
     # list of frames  where each item is list of tracks to list of tracers where each item is a list of frames
     tracks_transposed = [list(i) for i in zip(*tracks)]
@@ -223,15 +224,16 @@ def tracking_selection(filename_in, filename_out_video, filename_out_csv, settin
 
         # saving the volume
         if V.ravel().sum() > 0:  # testing if the volume is not empty, if sum(V[:]) == 0, then there is nothing to save
-            frameSum = V.reshape((-1, V.shape[-1])).sum(0)
+            # save
+            if settings['tracker_npyvolume_output']:
 
-            # filtering out the ignored frames
-            V = V[..., np.logical_and(frameSum > 0, np.isfinite(frameSum))]
+                frame_sum = V.reshape((-1, V.shape[-1])).sum(0)
+                # filtering out the ignored frames
+                V = V[..., np.logical_and(frame_sum > 0, np.isfinite(frame_sum))]
 
-            filenameOutputVolume = filename_out_video.split('.')[:-1][0] + '_' + str(t)
-            np.save(filenameOutputVolume, V)
-            print('saved ' + filenameOutputVolume)
-            #
+                filename_output_volume = filename_out_video.split('.')[:-1][0] + '_' + str(t)
+                np.save(filename_output_volume, V)
+                print('saved ' + filename_output_volume)
 
             filename_output_bbox_csv = filename_out_csv.split('.')[:-1][0] + '_' + str(t) + '.csv'
             tt = tracks_transposed[t]
