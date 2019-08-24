@@ -1,6 +1,6 @@
 The tool you are going to operate with is designed to help you with processing, tracking and analyzing repetitive patterns of videos. It consists of three main parts, where one part is designed to help you with pre-process the video and select only the relevant part (to minimize the computational overhead), the second part is designed to help you track your object(s), where we designed a minimalistic interface where you can select your object, move forward and backward in the video and eventually correct tracks when it is necessary and lastly detect the repetitive patterns by a fully automated statistical framework based on state-of-the-art encoder-decoder minimalistic architecture. 
 
-** All crashes, bugs, and suggestions should be reported to Antonin Sulc **
+**All crashes, bugs, and suggestions should be reported to Antonin Sulc**
 
 # Theory
 
@@ -21,7 +21,7 @@ Since the mask is pixel-wise, it can easily contain holes, thus we added a morph
 
 The file is automatically saved with the same name as the input video with the suffix *_roi*. 
 
-![frameDiff](https://github.com/collective_psychology_tracker/img/roiFrameDiff.png "frameDiff")
+![Difference of Consecutive Frames](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/roiFrameDiff.png "Difference of Consecutive Frames")
 
 ### Manual ROI Selection
 The manual ROI selection calculates the *frameDiff* likewise the automatic ROI selection, but shows the frameDiff to you so you can have an overview which parts of the scene are changing and thus are relevant.
@@ -49,13 +49,13 @@ When the GUI pops-up on the initial frame, you can choose the initial bounding b
 
 To move to next frame, press **D**, to move to backward, press **A**, to switch to the bounding box selection GUI (in case you won't change the current tracked bounding box - *the tracker will be restarted *) press **S**). If you want to run automatic playback press **P** (and to stop it), **Q** to quit.
 
-![Selecting of Objects to Track](https://github.com/collective_psychology_tracker/img/tracking.png "Selecting of Objects to Track")
+![Selecting of Objects to Track](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/tracking.png "Selecting of Objects to Track")
 
 After quitting (pressing the **Q**) the program automatically creates for each tracklet a file which is called *$filename_$trackletid*, where $filename is input video filename (without suffix) and $trackletid a number <0,9> which corresponds to an ID of the tracked object. The files for each tracklet are:
 * a CSV file with a bounding box [left-top-x,left-top-y,right-bottom-x,right-bottom-y], see image below
 * a npy volume (can be huge) which is cut-out of the bounding box resized to the mean size of the bounding boxes during the tracking (can be disabled by tracker_npyvolume_output = 0 in config.ini)
 
-![ROI](https://github.com/collective_psychology_tracker/materials/images/selectionbbo.png "ROI")
+![ROI](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/selectionbbo.png "ROI")
 
 Additionally, for validation, the program creates a video with detected bounding boxes (can be turned off via tracker_video_output = 0)
 
@@ -66,11 +66,11 @@ An intuitive explanation of an autoencder is it is a black box (*convolutional n
 
 The GUI prodives access to a very simple configuration of the network, i.e. number of convolutional layers, size of the convolutions, number of feature maps etc. 
 
-![Convolutions](https://github.com/collective_psychology_tracker/materials/images/conv.jpg "Convolution")
+![Convolutions](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/conv.jpg "Convolution")
 
-![Autoencoder](https://github.com/collective_psychology_tracker/materials/images/cnn-ae.png "Autoencoder")
+![Autoencoder](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/cnn-ae.png "Autoencoder")
 
-![Autoencoder GUI](https://github.com/collective_psychology_tracker/materials/images/ae_gui.png "Autoencoder GUI")
+![Autoencoder GUI](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/ae_gui.png "Autoencoder GUI")
 
 Furthermore, because the latent code is still highly dimensional, the code is furhter squeezed into 
 
