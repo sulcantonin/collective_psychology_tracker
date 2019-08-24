@@ -52,8 +52,10 @@ To move to next frame, press **D**, to move to backward, press **A**, to switch 
 ![Selecting of Objects to Track](https://github.com/collective_psychology_tracker/img/tracking.png "Selecting of Objects to Track")
 
 After quitting (pressing the **Q**) the program automatically creates for each tracklet a file which is called *$filename_$trackletid*, where $filename is input video filename (without suffix) and $trackletid a number <0,9> which corresponds to an ID of the tracked object. The files for each tracklet are:
-* a CSV file with a bounding box [left-top-x,left-top-y,right-bottom-x,right-bottom-y] 
+* a CSV file with a bounding box [left-top-x,left-top-y,right-bottom-x,right-bottom-y], see image below
 * a npy volume (can be huge) which is cut-out of the bounding box resized to the mean size of the bounding boxes during the tracking (can be disabled by tracker_npyvolume_output = 0 in config.ini)
+
+![ROI](https://github.com/collective_psychology_tracker/materials/images/selectionbbo.png "ROI")
 
 Additionally, for validation, the program creates a video with detected bounding boxes (can be turned off via tracker_video_output = 0)
 
@@ -64,11 +66,11 @@ An intuitive explanation of an autoencder is it is a black box (*convolutional n
 
 The GUI prodives access to a very simple configuration of the network, i.e. number of convolutional layers, size of the convolutions, number of feature maps etc. 
 
-![Convolutions](https://github.com/collective_psychology_tracker/materials/img/conv.jpg "Convolution")
+![Convolutions](https://github.com/collective_psychology_tracker/materials/images/conv.jpg "Convolution")
 
-![Autoencoder](https://github.com/collective_psychology_tracker/img/materials/cnn-ae.png "Autoencoder")
+![Autoencoder](https://github.com/collective_psychology_tracker/materials/images/cnn-ae.png "Autoencoder")
 
-![Autoencoder GUI](https://github.com/collective_psychology_tracker/img/ae_gui.png "Autoencoder GUI")
+![Autoencoder GUI](https://github.com/collective_psychology_tracker/materials/images/ae_gui.png "Autoencoder GUI")
 
 Furthermore, because the latent code is still highly dimensional, the code is furhter squeezed into 
 
