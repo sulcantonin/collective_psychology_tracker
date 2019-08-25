@@ -119,8 +119,8 @@ class autoencoder_gui:
             return
 
     def load_input_callback(self):
-        filename_in = filedialog.askopenfilename(title="Load NUMPY Volume", filetypes=(("npy files", "*.npy"),))
-        self.V = np.load(filename_in)
+        self.filename_in = filedialog.askopenfilename(title="Load NUMPY Volume", filetypes=(("npy files", "*.npy"),))
+        self.V = np.load(self.filename_in)
         self.volume_size_string.delete(1.0, tk.END)
         self.volume_size_string.insert(tk.END, str(self.V.shape))
 
@@ -130,6 +130,11 @@ class autoencoder_gui:
             return
         filename_out_video = tk.filedialog.asksaveasfilename(title='output video file ')
         filename_out_csv = tk.filedialog.asksaveasfilename(title='output csv file')
+
+        if filename_out_video is "":
+            filename_out_video = utils.user_left_output_empty(self.filename_in, 'ae','avi')
+        if filename_out_csv is "":
+            filename_out_csv = utils.user_left_output_empty(self.filename_in, 'ae','csv')
 
         if filename_out_video is not "" and \
                 self.V is not None and \
@@ -141,7 +146,6 @@ class autoencoder_gui:
 
             utils.write_volume_to_video(V_out, filename_out_video)
         if filename_out_csv is not "" and self.peaks is not None:
-            # np.savetxt(filenameOutCSV, self.peaks.astype(np.uint32), delimiter=",")
             self.peaks.tofile(filename_out_csv, sep=',', format='%i')
 
     def train_autoencoder_callback(self):

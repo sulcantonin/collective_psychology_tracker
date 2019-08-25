@@ -1,6 +1,7 @@
 from tracking import *
 import tkinter as tk
 import autoencoder_gui as aeg
+import utils
 import configparser
 
 root = tk.Tk()
@@ -27,15 +28,6 @@ settings['autoencoder_gui_width'] = config.getint('default', 'autoencoder_gui_wi
 settings['autoencoder_gui_height'] = config.getint('default','autoencoder_gui_height', fallback=600)
 
 
-def user_left_output_empty(filename_in, file_suffix, file_type=None):
-    path = filename_in.split('/')[:-1]
-    filename = filename_in.split('/')[-1].split('.')[0]
-    if file_type is None:
-        file_type = filename_in.split('/')[-1].split('.')[-1]
-
-    return ''.join([p + '/' for p in path]) + filename + '_' + file_suffix + '.' + file_type
-
-
 def roi_selection_callback():
     filename_in = tk.filedialog.askopenfilename()
     # nothing chosen
@@ -45,7 +37,7 @@ def roi_selection_callback():
     filename_out = tk.filedialog.asksaveasfilename(title='output video file')
 
     if filename_out is "":
-        filename_out = user_left_output_empty(filename_in, 'roi')
+        filename_out = utils.user_left_output_empty(filename_in, 'roi')
 
     roi(filename_in, filename_out, settings)
 
@@ -60,9 +52,9 @@ def tracking_selection_callback():
     filename_out_csv = tk.filedialog.asksaveasfilename(title='output csv file')
 
     if filename_out_video is "":
-        filename_out_video = user_left_output_empty(filename_in, 'tracking')
+        filename_out_video = utils.user_left_output_empty(filename_in, 'tracking')
     if filename_out_csv is "":
-        filename_out_csv = user_left_output_empty(filename_in, 'tracking', 'csv')
+        filename_out_csv = utils.user_left_output_empty(filename_in, 'tracking', 'csv')
     tracking_selection(filename_in, filename_out_video, filename_out_csv, settings)
 
 def autoencoder_callback():

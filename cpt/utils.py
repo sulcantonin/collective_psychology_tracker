@@ -90,3 +90,13 @@ def normalize(X):
         X[..., i] = X[..., i] - np.mean(X[..., i].ravel())
         X[..., i] = X[..., i] / np.sqrt(np.sum(X[..., i].ravel() ** 2))
     return X
+
+
+def user_left_output_empty(filename_in, file_suffix, file_type=None):
+    path = filename_in.split('/')[:-1]
+    filename = filename_in.split('/')[-1].split('.')[0]
+    if file_type is None:
+        file_type = filename_in.split('/')[-1].split('.')[-1]
+
+    return ''.join([p + '/' for p in path]) + filename + '_' + file_suffix + '.' + file_type
+
