@@ -93,3 +93,34 @@ def fft_low_pass_filter(x, band=60):
     xf = np.fft.rfft(x)
     xf[band:] = 0
     return np.fft.irfft(xf)
+'''
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(0,2 * 3.14,1000)
+y = np.sin(x) + 0.1 * np.random.randn(1000)
+y[np.random.randint(0,1000,100)] = np.random.randn(100) * 1
+print(y)
+plt.subplot(2,2,1)
+plt.title('original')
+plt.axis('off')
+plt.plot(y)
+
+plt.subplot(2,2,2)
+plt.title('band 20')
+plt.axis('off')
+plt.plot(fft_low_pass_filter(y,20))
+
+plt.subplot(2,2,3)
+plt.title('band 10')
+plt.axis('off')
+plt.plot(fft_low_pass_filter(y,10))
+
+plt.subplot(2,2,4)
+plt.title('band 5')
+plt.axis('off')
+plt.plot(fft_low_pass_filter(y,5))
+
+plt.show()
+'''
