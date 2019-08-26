@@ -80,15 +80,15 @@ class autoencoder_gui:
         self.n_epochs_entry = tk.Entry(window, textvariable=self.n_epochs_string)
         self.n_epochs_entry.grid(row=6, column=1)
 
-        self.band_text = tk.Text(window, height=1, width=20)
-        self.band_text.grid(row=7, column=0)
-        self.band_text.configure(state='normal')
-        self.band_text.insert(tk.END, 'Band:')
-        self.band_text.configure(state='disabled')
-        self.band_string = tk.StringVar()
-        self.band_string.set('25')
-        self.band_entry = tk.Entry(window, textvariable=self.band_string)
-        self.band_entry.grid(row=7, column=1)
+        self.bandwidth_text = tk.Text(window, height=1, width=20)
+        self.bandwidth_text.grid(row=7, column=0)
+        self.bandwidth_text.configure(state='normal')
+        self.bandwidth_text.insert(tk.END, 'Bandwidth:')
+        self.bandwidth_text.configure(state='disabled')
+        self.bandwidth_string = tk.StringVar()
+        self.bandwidth_string.set('25')
+        self.bandwidth_entry = tk.Entry(window, textvariable=self.bandwidth_string)
+        self.bandwidth_entry.grid(row=7, column=1)
 
         self.train_autoencoder_button = tk.Button(window, text="Train Network", command=self.train_autoencoder_callback)
         self.train_autoencoder_button.grid(row=8, column=0, columnspan=1)
@@ -96,7 +96,7 @@ class autoencoder_gui:
         self.save_results_button = tk.Button(window, text="Save Results", command=self.save_results_callback)
         self.save_results_button.grid(row=8, column=1, columnspan=1)
 
-        self.latent_code_figure = Figure()  # figsize=(6, 6)
+        self.latent_code_figure = Figure()
         self.latent_code_canvas = FigureCanvasTkAgg(self.latent_code_figure, master=window)
         self.latent_code_canvas.get_tk_widget().grid(row=0, column=2, rowspan=8, columnspan=1)
 
@@ -154,7 +154,7 @@ class autoencoder_gui:
             return
         learning_rate = float(self.learning_rate_string.get())
         n_epochs = int(self.n_epochs_entry.get())
-        band = int(self.band_string.get())
+        band = int(self.bandwidth_string.get())
 
         assert learning_rate > 0
         assert n_epochs > 0
