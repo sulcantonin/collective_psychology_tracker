@@ -62,7 +62,7 @@ Additionally, for validation, the program creates a video with detected bounding
 ## Extracting the repetitive patterns from the video
 This part uses the autoencoder architecture. There are plenty of tutorials introducing autoencoders, for example, https://www.jeremyjordan.me/autoencoders/
 
-![Autoencoder](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/cnn-ae.png "Autoencoder")
+![Autoencoder](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/cnn_ae.png "Autoencoder")
 
 An intuitive explanation of an autoencoder is it is a black box (*convolutional neural net*), which has a bottleneck in the form a latent code which has carries much less information than the input (*image*). During the training, you are giving the images to the input and expect that you will get the same image on the input, but the image was squeezed into the minimal representation of the bottleneck (*latent code*). The minor changes in the image are largely visible in a change of the latent code and by the study of this code, we can investigate anomalies of the examined object or find repetitive patterns. As a result, when the network is trained, each frame can be compressed to its latent code. 
 
@@ -92,9 +92,9 @@ After these parameters are set the network can be initialized by the button *Ini
 The fields:
 * *Learning Rate* say how big the steps to train network should be. The rule of thumb is that when no changes in the latent code and loss during training are noticed, it is necessary to increase the learning rate. When the latent code changes drastically and the loss does not get lower it is necessary to decrease the learning rate. 
 * *Training Epochs* say how many iterations we should perform. Since we do not have enough data it is sufficient to perform only very few interactions (like 20). When the loss does not change, we performed unnecessary many iterations. 
-* *Band* is says which frequencies are filtered. The latent codes are usually very bumpy and higher frequencies can be filtered. The lower the value gets the narrowed the passband gets which means that higher frequencies are filtered and the latent code get intuitively smoother, see the figure below 
+* *Band* is says which frequencies are filtered. The latent codes are usually very bumpy and higher frequencies can be filtered. The lower the value gets the narrowed the passband gets which means that higher frequencies are filtered and the latent code get intuitively smoother, see the figure below.
 
-![Band](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/band.png "Band")
+![Bandwidth](https://github.com/sulcantonin/collective_psychology_tracker/blob/master/materials/images/band.png "Bandwidth")
 
 Once you have everything set, press Train Network. In case nothing happens for a few seconds, it probably means that the input volume is too large. If the loss (graph in the right bottom) does not go down, follow the suggestions about *Learning Rate* above and once you are done, you can save the results:
 
