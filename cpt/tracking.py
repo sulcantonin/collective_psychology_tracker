@@ -98,11 +98,12 @@ def str2tracker(tracker_name):
     OPENCV_OBJECT_TRACKERS = {
         "csrt": cv2.TrackerCSRT_create,
         "kcf": cv2.TrackerKCF_create,
-        "boosting": cv2.TrackerBoosting_create,
+	"goturn": cv2.TrackerGOTURN,
+        # "boosting": cv2.TrackerBoosting_create, # obsolete
         "mil": cv2.TrackerMIL_create,
-        "tld": cv2.TrackerTLD_create,
-        "medianflow": cv2.TrackerMedianFlow_create,
-        "mosse": cv2.TrackerMOSSE_create
+        # "tld": cv2.TrackerTLD_create, # obsolete
+        # "medianflow": cv2.TrackerMedianFlow_create, # obsolete
+        # "mosse": cv2.TrackerMOSSE_create # obsolete
     }
 
     # grab the appropriate object tracker using our dictionary of
