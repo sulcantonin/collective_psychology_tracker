@@ -1,6 +1,6 @@
 The tool you are going to operate with is designed to help you with processing, tracking and analyzing repetitive patterns of videos. It consists of three main parts, where one part is designed to help you with pre-process the video and select only the relevant part (to minimize the computational overhead), the second part is designed to help you track your object(s), where we designed a minimalistic interface where you can select your object, move forward and backward in the video and eventually correct tracks when it is necessary and lastly detect the repetitive patterns by a fully automated statistical framework based on state-of-the-art encoder-decoder minimalistic architecture. 
 
-**All crashes, bugs, and suggestions should be reported to Antonin Sulc**
+**All crashes, bugs, and suggestions should be reported to Antonin Sulc (sulcantonin.github.io)**
 
 # Theory
 
